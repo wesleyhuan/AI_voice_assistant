@@ -1,9 +1,17 @@
 class CFG:
-    # === 參數設定 ===
-    SAMPLE_RATE = 16000       # Whisper 建議 16kHz
-    CHANNELS = 1              # 單聲道
-    BLOCK_DURATION = 5        # 每次錄音秒數 (越短越即時，但準確度可能略降)
-    MODEL_SIZE = "small"      # 模型大小 (tiny, base, small, medium, large-v2)
-    DEVICE = "cpu"            # 'cpu' 或 'cuda'
+    # === Audio settings ===
+    SAMPLE_RATE = 16000       # Whisper recommended 16kHz
+    CHANNELS = 1              # Mono
+    BLOCK_DURATION = 5        # Seconds for standalone audio.py demo
+
+    # === Real-time / VAD settings ===
+    CHUNK_DURATION = 0.5      # Seconds per recorded chunk
+    SILENCE_THRESHOLD = 0.01  # RMS energy below this is treated as silence
+    SILENCE_CHUNKS = 4        # Consecutive silent chunks before utterance ends (~2 s)
+
+    # === Whisper model settings ===
+    MODEL_SIZE = "small"      # tiny, base, small, medium, large-v2
+    DEVICE = "cpu"            # 'cpu' or 'cuda'
     COMPUTE_TYPE = "int8"     # 'int8', 'float16', 'float32'
+
     FILE_NAME = "./output.wav"
