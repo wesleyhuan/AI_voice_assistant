@@ -1,34 +1,58 @@
 import os
+import numpy as np
 from faster_whisper import WhisperModel
 from config import CFG
 
-def transcribe_audio(file_path: str, model_size: str = CFG.MODEL_SIZE, device: str = CFG.DEVICE, compute_type: str = CFG.COMPUTE_TYPE):
-    """
-    Transcribes an audio file to text using faster-whisper.
+# Singleton model — loaded once and reused across calls
+_model: WhisperModel | None = None
 
-    :param file_path: Path to the audio file (supports mp3, wav, m4a, etc.)
+def get_model(model_size: str = CFG.MODEL_SIZE, device: str = CFG.DEVICE, compute_type: str = CFG.COMPUTE_TYPE) -> WhisperModel:
+    """
+    Returns a cached WhisperModel, loading it on first call.
+
+    :param model_size: Whisper model size (tiny, base, small, medium, large-v2)
+    :param device: Inference device ('cpu' or 'cuda')
+    :param compute_type: Numerical precision ('int8', 'int8_float16', 'float16', 'float32')
+    :return: Loaded WhisperModel instance.
+    """
+    global _model
+    if _model is None:
+        print(f"Loading model '{model_size}' ...")
+        _model = WhisperModel(model_size, device=device, compute_type=compute_type)
+        print("Model ready.")
+    return _model
+
+def transcribe_audio(audio_input, model_size: str = CFG.MODEL_SIZE, device: str = CFG.DEVICE, compute_type: str = CFG.COMPUTE_TYPE):
+    """
+    Transcribes audio to text using faster-whisper.
+
+    Accepts either a file path or a NumPy audio array so that real-time
+    callers can skip the save-to-disk round-trip.
+
+    :param audio_input: File path (str) or NumPy float32 array of audio samples.
     :param model_size: Whisper model size (tiny, base, small, medium, large-v2)
     :param device: Inference device ('cpu' or 'cuda')
     :param compute_type: Numerical precision ('int8', 'int8_float16', 'float16', 'float32')
     :return: Full transcribed text as a string, or None on failure.
     """
-    if not os.path.isfile(file_path):
-        raise FileNotFoundError(f"Audio file not found: {file_path}")
+    # Validate file path input
+    if isinstance(audio_input, str) and not os.path.isfile(audio_input):
+        raise FileNotFoundError(f"Audio file not found: {audio_input}")
 
     try:
-        print(f"Loading model '{model_size}' ...")
-        model = WhisperModel(model_size, device=device, compute_type=compute_type)
+        model = get_model(model_size, device, compute_type)
 
-        print("Starting transcription...")
-        segments, info = model.transcribe(file_path, beam_size=5)
+        # faster-whisper accepts a 1-D float32 numpy array directly
+        if isinstance(audio_input, np.ndarray):
+            audio_input = audio_input.flatten().astype(np.float32)
+
+        segments, info = model.transcribe(audio_input, beam_size=5)
 
         print(f"Detected language: {info.language} (confidence: {info.language_probability:.2f})")
-        print("Transcription:")
 
         full_text = []
         for segment in segments:
-            print(f"[{segment.start:.2f}s -> {segment.end:.2f}s] {segment.text}")
-            full_text.append(segment.text)
+            full_text.append(segment.text.strip())
 
         return " ".join(full_text)
 
@@ -40,4 +64,4 @@ if __name__ == "__main__":
     audio_file = CFG.FILE_NAME
     result = transcribe_audio(audio_file)
     if result:
-        print("\nFull transcript:", result)
+        print("Transcript:", result)
