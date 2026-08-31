@@ -3,6 +3,9 @@ import soundfile as sf
 import numpy as np
 from config import CFG
 
+MAX_DURATION = 3600  # 1 hour
+MAX_SAMPLE_RATE = 192000  # 192 kHz
+
 def record_audio(duration=CFG.BLOCK_DURATION, sample_rate=CFG.SAMPLE_RATE):
     """
     Records a fixed-length audio block from the default microphone.
@@ -11,10 +14,10 @@ def record_audio(duration=CFG.BLOCK_DURATION, sample_rate=CFG.SAMPLE_RATE):
     :param sample_rate: Sampling rate in Hz.
     :return: NumPy array containing recorded audio data, or None on failure.
     """
-    if duration <= 0:
-        raise ValueError("Duration must be a positive number.")
-    if sample_rate <= 0:
-        raise ValueError("Sample rate must be a positive number.")
+    if duration <= 0 or duration > MAX_DURATION:
+        raise ValueError("Duration must be a positive number and at most 3600 seconds.")
+    if sample_rate <= 0 or sample_rate > MAX_SAMPLE_RATE:
+        raise ValueError("Sample rate must be a positive number and at most 192000 Hz.")
 
     print(f"Recording for {duration} s...")
     try:
@@ -34,6 +37,11 @@ def record_chunk(duration=CFG.CHUNK_DURATION, sample_rate=CFG.SAMPLE_RATE):
     :param sample_rate: Sampling rate in Hz.
     :return: NumPy array of shape (samples, 1).
     """
+    if duration <= 0 or duration > MAX_DURATION:
+        raise ValueError("Duration must be a positive number and at most 3600 seconds.")
+    if sample_rate <= 0 or sample_rate > MAX_SAMPLE_RATE:
+        raise ValueError("Sample rate must be a positive number and at most 192000 Hz.")
+
     audio_data = sd.rec(int(duration * sample_rate), samplerate=sample_rate, channels=1, dtype='float32')
     sd.wait()
     return audio_data
