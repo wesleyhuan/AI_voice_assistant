@@ -1,3 +1,4 @@
+import os
 import sounddevice as sd
 import soundfile as sf
 import numpy as np
@@ -84,6 +85,7 @@ def save_audio(audio_data, filename=CFG.FILE_NAME, sample_rate=CFG.SAMPLE_RATE):
     :param sample_rate: Sampling rate in Hz.
     :return: The saved filename, or None on failure.
     """
+    filename = os.path.basename(filename)
     try:
         sf.write(filename, audio_data, sample_rate)
         print(f"Audio saved to {filename}")
